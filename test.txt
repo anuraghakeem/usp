@@ -1,0 +1,472 @@
+1)
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<fcntl.h>
+#include<string.h>
+#include<sys/stat.h>
+#include<unistd.h>
+int main(int argc,char *argv[])
+{
+int fd,i,size;
+char buf;
+char name[10];
+printf("enter the filename\n");
+scanf("%s",name);
+if((fd=open(name,O_RDONLY))<0)
+{
+    printf("couldn't open file\n");
+    exit(1);
+}
+size=lseek(fd,0,SEEK_END);
+printf("%d\n",size);
+for(i=size-1;i>=0;i--)
+{
+    lseek(fd,(off_t)i,SEEK_SET);
+    if((read(fd,&buf,1)!=1))
+    {
+        printf("error reading \n");
+        exit(1);
+    }
+    printf("%c",buf);
+}
+printf("\n");
+
+}
+
+2)
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<sys/stat.h>
+#include<fcntl.h>
+#include<string.h>
+int main(){
+	int fd,i,size;
+	char buf[30],name[20];
+	printf("enter name of the file\n");
+	scanf("%s",name);
+	if((fd=open(name,O_RDONLY))<0){
+		printf("couldn't open the file\n");
+		exit(1);
+	}
+	if((read(fd,&buf,20))!=20){
+		printf("read error\n");
+		exit(1);
+	}
+	printf("first 20 char\n");
+	printf("%s",buf);
+	lseek(fd,10,SEEK_SET);
+	if((read(fd,&buf,20))!=20){
+		printf("read error\n");
+		exit(1);
+	}
+	printf("20 char from 10th byte\n");
+	printf("%s",buf);
+	lseek(fd,10,SEEK_CUR);
+	if((read(fd,&buf,20))!=20){
+		printf("read error\n");
+		exit(1);
+	}
+	printf("20 char current file offset\n");
+	printf("%s",buf);
+	lseek(fd,0,SEEK_SET);
+	size=lseek(fd,0,SEEK_END);
+	printf("file size %d \n",size);
+}
+3)
+#include<stdio.h>
+#include<stdlib.h>
+#include<fcntl.h>
+#include<sys/stat.h>
+#include<unistd.h>
+#include<string.h>
+int main(){
+	struct stat fs;
+	char name[20];
+	printf("enter the name\n");
+	scanf("%s",name);
+	if((stat(name,&fs))<0)
+		exit(1);
+	printf("file size %d\n",fs.st_size);
+	printf("number of links %d\n",fs.st_nlink);
+	printf("inodes %d\n",fs.st_ino);
+	printf("user id %d\n",fs.st_uid);
+	printf("access permissions\n");
+	printf((fs.st_mode & S_IRUSR)?"r":"-");
+	printf((fs.st_mode & S_IWUSR)?"w":"-");
+	printf((fs.st_mode & S_IXUSR)?"x":"-");
+	printf((fs.st_mode & S_IRGRP)?"r":"-");
+	printf((fs.st_mode & S_IWGRP)?"w":"-");
+	printf((fs.st_mode & S_IXGRP)?"x":"-");
+	printf((fs.st_mode & S_IROTH)?"r":"-");
+}
+4)
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<sys/stat.h>
+#include<string.h>
+#include<fcntl.h>
+#include<dirent.h>
+#include<time.h>
+int main(){
+	struct stat fs;
+	struct dirent *dir;
+	DIR *dp;
+	dp=opendir(".");
+	if(dp){
+	while(dir=readdir(dp)){
+	stat(dir->d_name,&fs);
+	printf("%d %o %d %d %s %s\n",fs.st_size,fs.st_mode,fs.st_ino,fs.st_nlink,ctime(&fs.st_atime),dir->d_name);
+
+	}
+	}
+
+}
+5)
+#include<stdio.h>
+#include<dirent.h>
+#include<fcntl.h>
+#include<sys/stat.h>
+#include<unistd.h>
+#include<string.h>
+#include<stdlib.h>
+#include<time.h>
+int main(){
+	int fd,size;
+	struct dirent *dir;
+	DIR *dp;
+	dp=opendir(".");
+	if(dp){
+		while((dir=readdir(dp))!=NULL){
+		fd=open(dir->d_name,O_RDWR,0777);
+		size=lseek(fd,0,SEEK_END);
+		if(size==0)
+		unlink(dir->d_name);
+		}
+	}
+}
+6)
+#include<stdio.h>
+#include<fcntl.h>
+#include<sys/stat.h>
+#include<sys/types.h>
+#include<unistd.h>
+#include<string.h>
+#include<stdlib.h>
+#include<dirent.h>
+int main(int argc, char *argv[]){
+	if(argc==3){
+		printf("creating hard link between %s and %s \n",argv[1],argv[2]);
+		if(link(argv[1],argv[2])==0)
+		printf("link created\n");
+		else
+		printf("link not created\n");
+	}
+	
+	if(argc==4){
+		printf("creating soft link n=between %s and %s ",argv[1],argv[2]);
+		if(symlink(argv[1],argv[2])==0)
+		printf("soft link created\n");
+		else
+		printf("soft link not created\n");
+
+	}
+}
+7)
+#include<stdio.h>
+#include<stdlib.h>
+#include<sys/stat.h>
+#include<sys/types.h>
+#include<fcntl.h>
+#include<unistd.h>
+#include<time.h>
+#include<utime.h>
+int main(int argc, char *argv[]){
+	struct stat fs1,fs2;
+	struct utimbuf times;
+	if(stat(argv[1],&fs1)<0){
+		printf("error\n");
+		exit(1);
+	}
+	if(stat(argv[2],&fs2)<0){
+		printf("error\n");
+		exit(1);
+	}
+	printf("before copying\n");
+	printf("acces time %s \n modification time %s\n",ctime(&fs1.st_atime),ctime(&fs1.st_mtime));
+	times.modtime=fs2.st_mtime;
+	times.actime=fs2.st_atime;
+	if(utime(argv[1],&times)<0)
+		printf("error 1\n");
+	stat(argv[1],&fs1);
+	
+	printf("after copying\n");
+	printf("access time %s \n Modification time %s\n",ctime(&fs1.st_atime),ctime(&fs1.st_mtime));
+
+}
+8)
+#include<stdio.h>
+#include<stdlib.h>
+#include<sys/stat.h>
+#include<sys/types.h>
+#include<setjmp.h>
+#include<fcntl.h>
+void f1(int, int, int, int);
+static int globval;
+static jmp_buf jmpbuffer;
+int main(){
+	volatile int volaval=1;
+	register int regval=2;
+	static int val=3;
+	globval=4;
+	printf("before longjump globval=%d regval=%d volaval=%d staticval=%d\n",globval,regval,volaval,val);
+	if(setjmp(jmpbuffer)!=0){
+	
+	printf("after long jmp globval=%d regval=%d volaval=%d staticval=%d\n",globval,regval,volaval,val);
+	exit(0);
+	}
+	globval=95,regval=96,volaval=97,val=98;
+	f1(globval,regval,volaval,val);
+	}
+	void f1(int i, int j, int k, int l){
+	printf("in f1()\n");
+	globval=1000;
+	j=9999;
+	longjmp(jmpbuffer,1);
+	}
+9a)
+#include<stdio.h>
+#include<unistd.h>
+#include<fcntl.h>
+#include<sys/stat.h>
+#include<sys/types.h>
+#include<string.h>
+
+int main(int argc, char *argv[]) {
+	int n, fd1, fd2;
+	char buf[100];
+
+	if((fd1 = open(argv[1], O_RDONLY)) < 0)
+		return -1;
+	printf("%o\n",umask(0));
+	if((fd2 = open(argv[2],  O_WRONLY | O_CREAT , 0644)) < 0)
+{
+		printf("unable to create file for writing due to %d\n", fd2);
+exit(EXIT_FAILURE);
+} else
+{
+	while((n = read(fd1, buf, 10))) {
+		if(write(fd2, buf, n) != n) {
+			printf("Write error\n");
+			break;
+		}
+		printf("%d\n", (int)lseek(fd2, 0, SEEK_CUR));
+	}
+
+	return 0;
+}
+}
+
+9b)
+#include<stdio.h>
+#include<unistd.h>
+#include<fcntl.h>
+#include<sys/stat.h>
+#include<sys/types.h>
+#include<string.h>
+int main(int argc, char *argv[]){
+int fd1,fd2,size;
+char buf[100];
+if((fd1=open(argv[1],O_RDONLY))<0)
+printf("error openign file1\n");
+if((fd2=open(argv[2],O_WRONLY|O_CREAT|O_TRUNC))<0)
+printf("error opening file2\n");
+size=lseek(fd1,0,SEEK_END);
+lseek(fd1,0,SEEK_SET);
+if((read(fd1,&buf,size))!=size)
+	printf("error reading file\n");
+if((write(fd2,buf,size))!=size)
+	printf("error writing file\n");
+else
+	printf("writing done\n");
+
+}
+10)
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<fcntl.h>
+#include<sys/stat.h>
+#include<sys/wait.h>
+int main(){
+	pid_t pid;
+	if((pid=fork())<0)
+		printf("fork error\n");
+	else if(pid==0){
+		if((pid=fork())<0)
+			printf("fork error\n");
+		else if(pid>0)
+			exit(0);
+
+		sleep(2);
+		printf("second child parent pid=%d\n",getppid());
+		exit(0);
+	}
+if(waitpid(pid,NULL,0)<0)
+	printf("wait error\n");
+exit(0);
+
+}
+11)
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<sys/stat.h>
+#include<sys/wait.h>
+#include<sys/types.h>
+#include<string.h>
+void charatatime(char*);
+int main(){
+	pid_t pid;
+	int c;
+	if((pid=fork())<0)
+		printf("fork error\n");
+	else if(pid==0){
+		charatatime("child child child child child child child \n");
+	
+	}
+	else
+		charatatime("PARENT PARENT parent parent parent\n");
+	exit(0);
+}
+void charatatime(char *str){
+	char *ptr;
+	int c;
+	setbuf(stdout,NULL);
+	for(ptr=str;(c=*ptr++)!=0;)
+		putc(c,stdout);
+}
+12)
+#include <stdio.h>
+
+#include <stdlib.h>
+
+#include <sys/stat.h>
+
+#include <sys/types.h>
+
+#include <unistd.h>
+
+ 
+
+void deamonize()
+
+{
+
+    pid_t pid = fork();
+
+ 
+
+    if(pid < 0)
+
+        fprintf(stderr, "Error Forking\n");
+
+    else if(pid)
+
+    {
+
+        printf("PID of Child %d\n",pid);
+
+        exit(0);
+
+    }
+
+ 
+
+    umask(0);
+
+    if(chdir("/") < 0)
+
+        printf("Error changing directory \n");
+
+    if(setsid() < 0)
+
+        printf("Error creating session\n");
+
+            
+
+    printf("Demon Created! \n");
+
+ 
+
+}
+
+int main()
+
+{
+
+    deamonize();
+
+    system("ps -axj");
+
+    return 0;
+
+}
+13)
+#include<stdio.h>
+#include<stdlib.h>
+#include<signal.h>
+struct sigaction sig;
+void handler(){
+	printf("interrupt received\n");
+	sig.sa_handler=SIG_DFL;
+	sigaction(SIGINT,&sig,0);
+
+}
+int main(){
+	sig.sa_flags=0;
+	sigemptyset(&sig.sa_mask);
+	sigaddset(&sig.sa_mask,SIGINT);
+	sig.sa_handler=handler;
+	sigaction(SIGINT,&sig,0);
+	while(1){
+		printf("don't press ctrl+c\n");
+		sleep(1);
+	}
+}
+14)
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<sys/stat.h>
+#include<signal.h>
+void callback()
+{
+	printf("interrupt received\n");
+	signal(SIGINT,SIG_DFL);
+
+}
+int main()
+{
+	int ch,i=0;
+	printf("enter your choice \n");
+	scanf("%d",&ch);
+	switch(ch)
+	{
+		case 1:signal(SIGINT,callback);
+			   break;
+		case 2:signal(SIGINT,SIG_IGN);
+				break;
+	}
+	while(1)
+	{
+		printf("press ctrl+c\n");
+		sleep(1);
+		i++;
+		if(i==10&&ch==2)
+			signal(SIGINT,SIG_IGN);
+	}
+	exit(0);
+}
